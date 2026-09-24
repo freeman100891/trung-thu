@@ -103,27 +103,46 @@
     return new THREE.CanvasTexture(canvas);
   }
 
+  // --- Responsive Camera & Viewport Calculations ---
+  function getCameraConfig() {
+    const isPortrait = window.innerHeight > window.innerWidth;
+    return {
+      fov: isPortrait ? 66 : 52,
+      posX: 0,
+      posY: isPortrait ? 5.0 : 4.2,
+      posZ: isPortrait ? 30.0 : 23.0,
+      minDistance: isPortrait ? 8.0 : 6.0,
+      maxDistance: isPortrait ? 52.0 : 42.0
+    };
+  }
+  const camCfg = getCameraConfig();
+
   // --- Three.js Setup ---
   const container = document.getElementById('canvas-container');
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x0a0714, 0.016);
 
-  const camera = new THREE.PerspectiveCamera(52, window.innerWidth / window.innerHeight, 0.1, 1000);
-  camera.position.set(0, 4.2, 23);
+  const camera = new THREE.PerspectiveCamera(camCfg.fov, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(camCfg.posX, camCfg.posY, camCfg.posZ);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
   renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.2;
   container.appendChild(renderer.domElement);
 
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
+  controls.dampingFactor = 0.06;
   controls.maxPolarAngle = Math.PI / 2 + 0.12;
-  controls.minDistance = 6;
-  controls.maxDistance = 42;
+  controls.minDistance = camCfg.minDistance;
+  controls.maxDistance = camCfg.maxDistance;
+  controls.enablePan = false; // Prevent panning away on mobile multi-touch
+  controls.touches = {
+    ONE: THREE.TOUCH.ROTATE,
+    TWO: THREE.TOUCH.DOLLY_PAN
+  };
   controls.autoRotate = true;
   controls.autoRotateSpeed = 0.45;
   controls.target.set(0, 1.8, 0);
@@ -138,7 +157,7 @@
     if (idleTimer) clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
       controls.autoRotate = true;
-    }, 2800);
+    }, 3200);
   });
 
   // --- Lighting ---
@@ -396,6 +415,7 @@
 
   // --- Moon Rabbits (Thỏ Ngọc) ---
   const bunnyList = [];
+  const bunnyMeshes = [];
 
   function createCuteBunny(colorHex, innerEarColorHex = 0xffa4b5) {
     const bunny = new THREE.Group();
@@ -461,6 +481,15 @@
     const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
     eyeR.position.set(0.09, 0.75, 0.32);
     bunny.add(eyeR);
+
+    // Invisible tap target for mobile touch
+    const bunnyHitGeo = new THREE.SphereGeometry(0.85, 8, 8);
+    const bunnyHitMat = new THREE.MeshBasicMaterial({ visible: false });
+    const bunnyHitMesh = new THREE.Mesh(bunnyHitGeo, bunnyHitMat);
+    bunnyHitMesh.position.y = 0.5;
+    bunny.add(bunnyHitMesh);
+    bunnyHitMesh.parentBunny = bunny;
+    bunnyMeshes.push(bunnyHitMesh);
 
     bunny.earGroup = earGroup;
     bunny.initialY = 0.36;
@@ -559,9 +588,14 @@
     lantern.targetScale = 1.0;
     lantern.currentScale = 1.0;
 
-    // Hit test target
-    bodyMesh.parentLantern = lantern;
-    lanternMeshes.push(bodyMesh);
+    // Hit test target: generous sphere for effortless finger tapping
+    const hitGeo = new THREE.SphereGeometry(1.6, 8, 8);
+    const hitMat = new THREE.MeshBasicMaterial({ visible: false });
+    const hitMesh = new THREE.Mesh(hitGeo, hitMat);
+    hitMesh.position.y = -0.2;
+    lantern.add(hitMesh);
+    hitMesh.parentLantern = lantern;
+    lanternMeshes.push(hitMesh);
 
     return lantern;
   }
@@ -620,43 +654,66 @@
     burstParticles.push({ system: pSystem, vels: velArr, geo, mat, life: 1.0 });
   }
 
-  // --- Raycasting for Lantern Hover & Click ---
+  // --- Raycasting for Lantern & Bunny Hover / Tap ---
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2(-100, -100);
   let hoveredLantern = null;
-  let isDragging = false;
   let pointerDownPos = { x: 0, y: 0 };
+  let pointerDownTime = 0;
 
   window.addEventListener('pointerdown', (e) => {
-    isDragging = false;
     pointerDownPos = { x: e.clientX, y: e.clientY };
-  });
+    pointerDownTime = performance.now();
+  }, { passive: true });
 
   window.addEventListener('pointermove', (e) => {
-    const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-    if (dist > 6) isDragging = true;
-
     mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
   });
 
   window.addEventListener('pointerup', (e) => {
-    // Attempt audio playback on first interaction
+    // Attempt audio playback on user touch/gesture
     tryPlayAudio();
 
-    if (isDragging) return;
     if (e.target.closest('.modal-backdrop') || e.target.closest('.top-controls') || e.target.closest('.make-wish-btn')) {
       return;
     }
 
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(lanternMeshes);
+    const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+    const duration = performance.now() - pointerDownTime;
 
+    // Mobile tap detection: finger wobble allowed up to 18px and tap duration up to 500ms
+    if (dist > 18 || duration > 500) return;
+
+    // Set precise raycast coordinates at the tap position
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    // 1. Check lanterns
+    const intersects = raycaster.intersectObjects(lanternMeshes);
     if (intersects.length > 0) {
       const clickedMesh = intersects[0].object;
       const clickedLantern = clickedMesh.parentLantern;
       if (clickedLantern) {
         onLanternClicked(clickedLantern);
+        return;
+      }
+    }
+
+    // 2. Check bunnies
+    const bunnyIntersects = raycaster.intersectObjects(bunnyMeshes);
+    if (bunnyIntersects.length > 0) {
+      const hitMesh = bunnyIntersects[0].object;
+      const bunny = hitMesh.parentBunny;
+      if (bunny) {
+        bunny.isHopping = true;
+        bunny.hopProgress = 0;
+        playChimeSound();
+        const p = bunny.position.clone();
+        p.y += 0.5;
+        createSparkleBurst(p);
       }
     }
   });
@@ -785,38 +842,70 @@
 
   musicBtn.addEventListener('click', toggleMusic);
 
-  // --- Fullscreen Control ---
+  // --- Fullscreen Control (with iOS / Safari detection) ---
   const fullscreenBtn = document.getElementById('fullscreen-btn');
-  fullscreenBtn.addEventListener('click', () => {
-    tryPlayAudio();
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.warn("Fullscreen error:", err);
-      });
-      fullscreenBtn.classList.add('active');
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        fullscreenBtn.classList.remove('active');
+  const isFullscreenSupported = !!(
+    document.fullscreenEnabled ||
+    document.webkitFullscreenEnabled ||
+    document.documentElement.requestFullscreen ||
+    document.documentElement.webkitRequestFullscreen
+  );
+
+  if (!isFullscreenSupported) {
+    fullscreenBtn.style.display = 'none';
+  } else {
+    fullscreenBtn.addEventListener('click', () => {
+      tryPlayAudio();
+      const fsElem = document.fullscreenElement || document.webkitFullscreenElement;
+      if (!fsElem) {
+        const req = document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen;
+        if (req) {
+          req.call(document.documentElement).catch(err => console.warn("Fullscreen error:", err));
+        }
+      } else {
+        const exit = document.exitFullscreen || document.webkitExitFullscreen;
+        if (exit) {
+          exit.call(document).catch(err => console.warn("Exit fullscreen error:", err));
+        }
       }
-    }
-  });
+    });
 
-  document.addEventListener('fullscreenchange', () => {
-    if (document.fullscreenElement) {
-      fullscreenBtn.classList.add('active');
-    } else {
-      fullscreenBtn.classList.remove('active');
-    }
-  });
+    ['fullscreenchange', 'webkitfullscreenchange'].forEach(evt => {
+      document.addEventListener(evt, () => {
+        const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+        fullscreenBtn.classList.toggle('active', isFs);
+      });
+    });
+  }
 
-  // --- Window Resize ---
+  // --- Window Resize & Orientation Responsive ---
   window.addEventListener('resize', () => {
+    const cs = getCameraConfig();
+    camera.fov = cs.fov;
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
+    controls.minDistance = cs.minDistance;
+    controls.maxDistance = cs.maxDistance;
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
   });
+
+  // --- Mobile Gyroscope Parallax (Device Orientation) ---
+  let orientationActive = false;
+  let targetTiltX = 0;
+  let targetTiltY = 0;
+  let currentTiltX = 0;
+  let currentTiltY = 0;
+
+  if (window.DeviceOrientationEvent && typeof window.DeviceOrientationEvent.requestPermission !== 'function') {
+    window.addEventListener('deviceorientation', (e) => {
+      if (e.gamma !== null && e.beta !== null) {
+        targetTiltX = THREE.MathUtils.clamp(e.gamma / 45, -1, 1) * 0.08;
+        targetTiltY = THREE.MathUtils.clamp((e.beta - 40) / 45, -1, 1) * 0.05;
+        orientationActive = true;
+      }
+    }, { passive: true });
+  }
 
   // --- Main Animation Loop ---
   const clock = new THREE.Clock();
@@ -830,9 +919,18 @@
     // 1. Controls update
     controls.update();
 
-    // 2. Island gentle idle bobbing
-    islandGroup.position.y = Math.sin(elapsedTime * 0.75) * 0.28;
-    islandGroup.rotation.z = Math.sin(elapsedTime * 0.5) * 0.015;
+    // 2. Island gentle idle bobbing & tilt parallax
+    if (orientationActive) {
+      currentTiltX += (targetTiltX - currentTiltX) * 0.05;
+      currentTiltY += (targetTiltY - currentTiltY) * 0.05;
+      islandGroup.position.y = Math.sin(elapsedTime * 0.75) * 0.28;
+      islandGroup.rotation.z = Math.sin(elapsedTime * 0.5) * 0.015 + currentTiltX;
+      islandGroup.rotation.x = currentTiltY;
+    } else {
+      islandGroup.position.y = Math.sin(elapsedTime * 0.75) * 0.28;
+      islandGroup.rotation.z = Math.sin(elapsedTime * 0.5) * 0.015;
+      islandGroup.rotation.x = 0;
+    }
 
     // 3. Blossom tree subtle canopy wave
     const bPos = blossomGeo.attributes.position;
@@ -909,31 +1007,34 @@
       l.scale.set(l.currentScale, l.currentScale, l.currentScale);
     });
 
-    // 7. Raycast Hover Check
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(lanternMeshes);
+    // 7. Raycast Hover Check (chỉ chạy trên máy tính có chuột, tiết kiệm pin cho điện thoại)
+    const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (!isTouchDevice) {
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(lanternMeshes);
 
-    if (intersects.length > 0) {
-      const hitLantern = intersects[0].object.parentLantern;
-      if (hoveredLantern !== hitLantern) {
+      if (intersects.length > 0) {
+        const hitLantern = intersects[0].object.parentLantern;
+        if (hoveredLantern !== hitLantern) {
+          if (hoveredLantern) {
+            hoveredLantern.targetScale = 1.0;
+            hoveredLantern.halo.material.opacity = 0.85;
+          }
+          hoveredLantern = hitLantern;
+          if (hoveredLantern) {
+            hoveredLantern.targetScale = 1.22;
+            hoveredLantern.halo.material.opacity = 1.0;
+          }
+        }
+        document.body.style.cursor = 'pointer';
+      } else {
         if (hoveredLantern) {
           hoveredLantern.targetScale = 1.0;
           hoveredLantern.halo.material.opacity = 0.85;
+          hoveredLantern = null;
         }
-        hoveredLantern = hitLantern;
-        if (hoveredLantern) {
-          hoveredLantern.targetScale = 1.22;
-          hoveredLantern.halo.material.opacity = 1.0;
-        }
+        document.body.style.cursor = 'default';
       }
-      document.body.style.cursor = 'pointer';
-    } else {
-      if (hoveredLantern) {
-        hoveredLantern.targetScale = 1.0;
-        hoveredLantern.halo.material.opacity = 0.85;
-        hoveredLantern = null;
-      }
-      document.body.style.cursor = 'default';
     }
 
     // 8. Sparkle Particles Update

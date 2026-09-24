@@ -1,20 +1,30 @@
 @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
 
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html, body {
   width: 100%;
   height: 100%;
+  height: 100dvh;
   overflow: hidden;
   background-color: #020206;
   font-family: 'Montserrat', sans-serif;
   color: #fff;
+  position: fixed;
 }
 
 #canvas-container {
@@ -24,31 +34,36 @@ html, body {
   width: 100%;
   height: 100%;
   z-index: 1;
+  touch-action: none;
+  -webkit-touch-callout: none;
 }
 
 canvas {
   display: block;
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
-/* UI Overlay Header / Controls */
+/* UI Overlay Header / Top Controls */
 .top-controls {
   position: fixed;
-  top: 20px;
-  right: 24px;
+  top: calc(16px + var(--sat));
+  right: calc(16px + var(--sar));
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   z-index: 10;
 }
 
 .control-btn {
   width: 44px;
   height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border-radius: 50%;
   border: 1.5px solid rgba(255, 215, 120, 0.4);
-  background: rgba(26, 18, 38, 0.7);
+  background: rgba(26, 18, 38, 0.75);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   color: #ffdc73;
@@ -59,17 +74,18 @@ canvas {
   outline: none;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 215, 120, 0.2);
   transition: all 0.25s ease;
+  touch-action: manipulation;
 }
 
 .control-btn:hover {
-  transform: scale(1.08);
+  transform: scale(1.06);
   border-color: #ffdd80;
-  background: rgba(45, 30, 65, 0.85);
+  background: rgba(45, 30, 65, 0.88);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 18px rgba(255, 220, 115, 0.45);
 }
 
 .control-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.92);
 }
 
 .control-btn svg {
@@ -81,20 +97,24 @@ canvas {
 
 .control-btn.active {
   border-color: #ffe07a;
-  box-shadow: 0 0 16px rgba(255, 215, 100, 0.5), inset 0 0 8px rgba(255, 215, 100, 0.3);
+  box-shadow: 0 0 16px rgba(255, 215, 100, 0.55), inset 0 0 8px rgba(255, 215, 100, 0.35);
+  color: #ffe07a;
 }
 
 /* Bottom Hint */
 .bottom-hint {
   position: fixed;
-  bottom: 26px;
+  bottom: calc(14px + var(--sab));
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  color: rgba(255, 240, 210, 0.75);
-  font-size: 13.5px;
+  width: 90%;
+  max-width: 380px;
+  text-align: center;
+  color: rgba(255, 240, 210, 0.8);
+  font-size: 13px;
   font-weight: 400;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.5px;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 10px rgba(255, 215, 120, 0.25);
   pointer-events: none;
   transition: opacity 0.4s ease;
@@ -102,32 +122,34 @@ canvas {
 }
 
 @keyframes pulseHint {
-  0%, 100% { opacity: 0.65; transform: translateX(-50%) translateY(0); }
-  50% { opacity: 0.95; transform: translateX(-50%) translateY(-2px); }
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) translateY(0); }
+  50% { opacity: 1; transform: translateX(-50%) translateY(-2px); }
 }
 
 /* Floating Action Button (Make a wish / Release lantern) */
 .make-wish-btn {
   position: fixed;
-  bottom: 68px;
+  bottom: calc(52px + var(--sab));
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  background: linear-gradient(135deg, rgba(42, 24, 60, 0.85), rgba(75, 42, 100, 0.85));
-  border: 1px solid rgba(255, 220, 140, 0.5);
-  padding: 8px 20px;
-  border-radius: 24px;
+  background: linear-gradient(135deg, rgba(42, 24, 60, 0.88), rgba(75, 42, 100, 0.88));
+  border: 1px solid rgba(255, 220, 140, 0.55);
+  padding: 10px 22px;
+  border-radius: 26px;
   color: #ffeaa7;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
   cursor: pointer;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 200, 100, 0.25);
-  transition: all 0.3s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45), 0 0 14px rgba(255, 200, 100, 0.3);
+  transition: all 0.25s ease;
+  touch-action: manipulation;
 }
 
 .make-wish-btn:hover {
@@ -137,6 +159,10 @@ canvas {
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 210, 100, 0.5);
 }
 
+.make-wish-btn:active {
+  transform: translateX(-50%) scale(0.95);
+}
+
 /* Modal Backdrop */
 .modal-backdrop {
   position: fixed;
@@ -144,16 +170,20 @@ canvas {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(4, 3, 8, 0.55);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  height: 100dvh;
+  background: rgba(4, 3, 8, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-backdrop.show {
@@ -164,16 +194,19 @@ canvas {
 /* Modal Card */
 .wish-card {
   position: relative;
-  width: 90%;
+  width: 92%;
   max-width: 360px;
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: linear-gradient(180deg, #1f142b 0%, #150e20 100%);
   border: 1.5px solid rgba(255, 205, 110, 0.45);
-  border-radius: 22px;
-  padding: 24px 20px 20px;
+  border-radius: 20px;
+  padding: 22px 18px 18px;
   box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 190, 80, 0.22);
-  transform: scale(0.85) translateY(20px);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: hidden;
+  transform: scale(0.9) translateY(18px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
 }
 
@@ -196,40 +229,47 @@ canvas {
 /* Modal Close Button */
 .modal-close-btn {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 28px;
-  height: 28px;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.8);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  touch-action: manipulation;
   transition: all 0.2s ease;
-  z-index: 2;
+  z-index: 5;
 }
 
 .modal-close-btn:hover {
   background: rgba(255, 255, 255, 0.25);
   color: #fff;
-  transform: scale(1.1);
+  transform: scale(1.08);
+}
+
+.modal-close-btn:active {
+  transform: scale(0.92);
 }
 
 .modal-close-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   fill: currentColor;
 }
 
 /* Modal Title */
 .card-title {
   color: #ffcf54;
-  font-size: 21px;
+  font-size: 20px;
   font-weight: 700;
-  margin-bottom: 15px;
+  margin-bottom: 14px;
   letter-spacing: 0.5px;
   text-shadow: 0 0 12px rgba(255, 210, 80, 0.4);
 }
@@ -237,10 +277,10 @@ canvas {
 /* Card Banner Image */
 .card-image-wrapper {
   width: 100%;
-  height: 175px;
-  border-radius: 14px;
+  height: 165px;
+  border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
   background: #0d0a14;
@@ -255,14 +295,14 @@ canvas {
 
 /* Quote Text */
 .card-quote {
-  font-size: 14.5px;
+  font-size: 14px;
   font-style: italic;
   font-weight: 400;
-  line-height: 1.65;
+  line-height: 1.6;
   color: #f1e9f8;
-  margin: 0 auto 16px;
+  margin: 0 auto 14px;
   padding: 0 4px;
-  min-height: 48px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -283,16 +323,19 @@ canvas {
 /* Release Custom Wish Modal */
 .custom-wish-modal {
   position: relative;
-  width: 90%;
+  width: 92%;
   max-width: 380px;
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   background: linear-gradient(180deg, #1f142b 0%, #150e20 100%);
   border: 1.5px solid rgba(255, 205, 110, 0.45);
-  border-radius: 22px;
-  padding: 24px 20px 20px;
+  border-radius: 20px;
+  padding: 22px 18px 18px;
   box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 190, 80, 0.25);
-  transform: scale(0.85) translateY(20px);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: hidden;
+  transform: scale(0.9) translateY(18px);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: center;
 }
 
@@ -304,20 +347,22 @@ canvas {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 15px;
+  margin-top: 12px;
 }
 
 .custom-input {
   width: 100%;
-  padding: 10px 14px;
+  padding: 11px 14px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 215, 120, 0.3);
   border-radius: 10px;
   color: #fff;
   font-family: 'Montserrat', sans-serif;
-  font-size: 14px;
+  font-size: 16px; /* 16px prevents iOS Safari from auto-zooming page on focus */
   outline: none;
   transition: all 0.25s ease;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .custom-input:focus {
@@ -328,21 +373,23 @@ canvas {
 
 .custom-textarea {
   resize: none;
-  height: 80px;
+  height: 85px;
 }
 
 .submit-lantern-btn {
   background: linear-gradient(135deg, #f39c12, #e67e22);
   color: #fff;
   border: none;
-  padding: 11px 20px;
+  padding: 12px 20px;
   border-radius: 12px;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 14.5px;
   cursor: pointer;
   letter-spacing: 0.5px;
   box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
   transition: all 0.25s ease;
+  touch-action: manipulation;
+  min-height: 44px;
 }
 
 .submit-lantern-btn:hover {
@@ -351,37 +398,44 @@ canvas {
   transform: translateY(-2px);
 }
 
-/* Responsive adjustments */
-@media (max-width: 480px) {
+.submit-lantern-btn:active {
+  transform: translateY(0);
+}
+
+/* Mobile Portrait & Small Screens */
+@media (max-width: 600px) {
   .top-controls {
-    top: 14px;
-    right: 16px;
     gap: 10px;
   }
   .control-btn {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
   }
   .bottom-hint {
     font-size: 12px;
-    bottom: 20px;
-    width: 90%;
-    text-align: center;
+    letter-spacing: 0.3px;
+    width: 94%;
   }
   .make-wish-btn {
-    bottom: 56px;
-    font-size: 12px;
-    padding: 6px 16px;
+    font-size: 13px;
+    padding: 9px 18px;
   }
   .wish-card, .custom-wish-modal {
-    max-width: 320px;
-    padding: 20px 16px 18px;
+    width: 94%;
+    padding: 18px 14px 16px;
   }
   .card-image-wrapper {
-    height: 150px;
+    height: 140px;
+  }
+  .card-title {
+    font-size: 18px;
+    margin-bottom: 10px;
   }
   .card-quote {
     font-size: 13.5px;
-    min-height: 42px;
+    margin-bottom: 10px;
+    min-height: 38px;
   }
 }
