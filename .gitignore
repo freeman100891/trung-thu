@@ -1,0 +1,16 @@
+# Intermediate and reference media
+*.mp4
+*.aac
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+
+# Local IDE / logs
+.vscode/
+*.log

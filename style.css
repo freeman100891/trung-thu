@@ -1,0 +1,387 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #020206;
+  font-family: 'Montserrat', sans-serif;
+  color: #fff;
+}
+
+#canvas-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* UI Overlay Header / Controls */
+.top-controls {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  z-index: 10;
+}
+
+.control-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 215, 120, 0.4);
+  background: rgba(26, 18, 38, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #ffdc73;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5), 0 0 12px rgba(255, 215, 120, 0.2);
+  transition: all 0.25s ease;
+}
+
+.control-btn:hover {
+  transform: scale(1.08);
+  border-color: #ffdd80;
+  background: rgba(45, 30, 65, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 18px rgba(255, 220, 115, 0.45);
+}
+
+.control-btn:active {
+  transform: scale(0.95);
+}
+
+.control-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  transition: fill 0.2s ease;
+}
+
+.control-btn.active {
+  border-color: #ffe07a;
+  box-shadow: 0 0 16px rgba(255, 215, 100, 0.5), inset 0 0 8px rgba(255, 215, 100, 0.3);
+}
+
+/* Bottom Hint */
+.bottom-hint {
+  position: fixed;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  color: rgba(255, 240, 210, 0.75);
+  font-size: 13.5px;
+  font-weight: 400;
+  letter-spacing: 0.6px;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9), 0 0 10px rgba(255, 215, 120, 0.25);
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+  animation: pulseHint 3.5s infinite ease-in-out;
+}
+
+@keyframes pulseHint {
+  0%, 100% { opacity: 0.65; transform: translateX(-50%) translateY(0); }
+  50% { opacity: 0.95; transform: translateX(-50%) translateY(-2px); }
+}
+
+/* Floating Action Button (Make a wish / Release lantern) */
+.make-wish-btn {
+  position: fixed;
+  bottom: 68px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: linear-gradient(135deg, rgba(42, 24, 60, 0.85), rgba(75, 42, 100, 0.85));
+  border: 1px solid rgba(255, 220, 140, 0.5);
+  padding: 8px 20px;
+  border-radius: 24px;
+  color: #ffeaa7;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 12px rgba(255, 200, 100, 0.25);
+  transition: all 0.3s ease;
+}
+
+.make-wish-btn:hover {
+  transform: translateX(-50%) scale(1.05);
+  background: linear-gradient(135deg, rgba(55, 30, 80, 0.95), rgba(95, 52, 125, 0.95));
+  border-color: #ffe082;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 210, 100, 0.5);
+}
+
+/* Modal Backdrop */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(4, 3, 8, 0.55);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-backdrop.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Modal Card */
+.wish-card {
+  position: relative;
+  width: 90%;
+  max-width: 360px;
+  background: linear-gradient(180deg, #1f142b 0%, #150e20 100%);
+  border: 1.5px solid rgba(255, 205, 110, 0.45);
+  border-radius: 22px;
+  padding: 24px 20px 20px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 190, 80, 0.22);
+  transform: scale(0.85) translateY(20px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  text-align: center;
+}
+
+.modal-backdrop.show .wish-card {
+  transform: scale(1) translateY(0);
+}
+
+/* Subtle corner light sheen */
+.wish-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 50% 10%, rgba(255, 220, 150, 0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* Modal Close Button */
+.modal-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.modal-close-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+/* Modal Title */
+.card-title {
+  color: #ffcf54;
+  font-size: 21px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  letter-spacing: 0.5px;
+  text-shadow: 0 0 12px rgba(255, 210, 80, 0.4);
+}
+
+/* Card Banner Image */
+.card-image-wrapper {
+  width: 100%;
+  height: 175px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6);
+  background: #0d0a14;
+}
+
+.card-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Quote Text */
+.card-quote {
+  font-size: 14.5px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.65;
+  color: #f1e9f8;
+  margin: 0 auto 16px;
+  padding: 0 4px;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Card Subtitle Footer */
+.card-footer-text {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1.8px;
+  color: #dfbfff;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px rgba(200, 150, 255, 0.4);
+  opacity: 0.9;
+}
+
+/* Release Custom Wish Modal */
+.custom-wish-modal {
+  position: relative;
+  width: 90%;
+  max-width: 380px;
+  background: linear-gradient(180deg, #1f142b 0%, #150e20 100%);
+  border: 1.5px solid rgba(255, 205, 110, 0.45);
+  border-radius: 22px;
+  padding: 24px 20px 20px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 190, 80, 0.25);
+  transform: scale(0.85) translateY(20px);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  text-align: center;
+}
+
+.modal-backdrop.show .custom-wish-modal {
+  transform: scale(1) translateY(0);
+}
+
+.custom-wish-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.custom-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 215, 120, 0.3);
+  border-radius: 10px;
+  color: #fff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.25s ease;
+}
+
+.custom-input:focus {
+  border-color: #ffd269;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 10px rgba(255, 210, 100, 0.25);
+}
+
+.custom-textarea {
+  resize: none;
+  height: 80px;
+}
+
+.submit-lantern-btn {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: #fff;
+  border: none;
+  padding: 11px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+  transition: all 0.25s ease;
+}
+
+.submit-lantern-btn:hover {
+  background: linear-gradient(135deg, #f1c40f, #e67e22);
+  box-shadow: 0 6px 20px rgba(241, 196, 15, 0.6);
+  transform: translateY(-2px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .top-controls {
+    top: 14px;
+    right: 16px;
+    gap: 10px;
+  }
+  .control-btn {
+    width: 38px;
+    height: 38px;
+  }
+  .bottom-hint {
+    font-size: 12px;
+    bottom: 20px;
+    width: 90%;
+    text-align: center;
+  }
+  .make-wish-btn {
+    bottom: 56px;
+    font-size: 12px;
+    padding: 6px 16px;
+  }
+  .wish-card, .custom-wish-modal {
+    max-width: 320px;
+    padding: 20px 16px 18px;
+  }
+  .card-image-wrapper {
+    height: 150px;
+  }
+  .card-quote {
+    font-size: 13.5px;
+    min-height: 42px;
+  }
+}

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Đêm Hội Trung Thu 3D</title>
+  <meta name="description" content="Trải nghiệm 3D Đêm Hội Trung Thu với đảo tiên bay, hoa đào phát sáng, thỏ ngọc và những cánh đèn trời ước nguyện lung linh.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏮</text></svg>">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 3D Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- Top Right Action Controls -->
+  <div class="top-controls">
+    <!-- Music Button -->
+    <button id="music-btn" class="control-btn" title="Bật / Tắt Nhạc" aria-label="Bật / Tắt Nhạc">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+      </svg>
+    </button>
+    <!-- Fullscreen Button -->
+    <button id="fullscreen-btn" class="control-btn" title="Toàn Màn Hình" aria-label="Toàn Màn Hình">
+      <svg viewBox="0 0 24 24">
+        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Bottom Interaction Hint -->
+  <div class="bottom-hint">
+    Chạm vào lồng đèn để xem câu chúc Trung Thu
+  </div>
+
+  <!-- Make a Wish & Release Lantern Button -->
+  <button id="open-custom-modal" class="make-wish-btn">
+    <span>🏮</span>
+    <span>Thả đèn ước nguyện</span>
+  </button>
+
+  <!-- Wishing Modal Popup Card -->
+  <div id="wish-modal" class="modal-backdrop">
+    <div class="wish-card">
+      <button id="close-wish-modal" class="modal-close-btn" aria-label="Đóng">
+        <svg viewBox="0 0 24 24">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+
+      <h2 id="modal-recipient" class="card-title">Gửi cậu</h2>
+
+      <div class="card-image-wrapper">
+        <img id="card-banner-img" src="card_banner.jpg" alt="Đêm Hội Trung Thu">
+      </div>
+
+      <p id="modal-quote" class="card-quote"></p>
+
+      <div class="card-footer-text">
+        ✦ TRUNG THU AN LÀNH ✦
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Wish Modal (Make your own lantern) -->
+  <div id="custom-wish-modal" class="modal-backdrop">
+    <div class="custom-wish-modal">
+      <button id="close-custom-modal" class="modal-close-btn" aria-label="Đóng">
+        <svg viewBox="0 0 24 24">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </button>
+
+      <h2 class="card-title">Thả Đèn Ước Nguyện</h2>
+
+      <form id="custom-wish-form" class="custom-wish-form">
+        <input 
+          type="text" 
+          id="custom-name" 
+          class="custom-input" 
+          placeholder="Tên người nhận (ví dụ: Gửi Em, Gửi Bạn Thân...)" 
+          maxlength="30"
+          value="Gửi cậu"
+          required
+        >
+        <textarea 
+          id="custom-text" 
+          class="custom-input custom-textarea" 
+          placeholder="Nhập lời chúc hoặc tâm tư của bạn gửi gắm vào lồng đèn bay lên trời..."
+          maxlength="200"
+          required
+        >Trăng tròn soi bóng yêu thương, chúc cậu Trung Thu an lành và luôn mỉm cười!</textarea>
+        <button type="submit" class="submit-lantern-btn">
+          Thắp Sáng & Thả Lồng Đèn 🏮
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Background Music Audio Source -->
+  <audio id="bg-music" src="audio.mp3" loop preload="auto"></audio>
+
+  <!-- Three.js and OrbitControls Libraries with local/CDN resilience -->
+  <script src="libs/three.min.js"></script>
+  <script>
+    if (typeof THREE === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>');
+    }
+  </script>
+  <script src="libs/OrbitControls.js"></script>
+  <script>
+    if (typeof THREE.OrbitControls === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>');
+    }
+  </script>
+
+  <!-- Main Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>
